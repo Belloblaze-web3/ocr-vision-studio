@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#070a12">
+  <meta name="description" content="OCR Vision Studio — turn pixels into evidence with confidence-gated OCR.">
+  <title>OCR Vision Studio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="rail">
+      <a class="brand" href="/" aria-label="OCR Vision Studio home">
+        <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><b></b></span>
+        <span><strong>OCR</strong><small>VISION STUDIO</small></span>
+      </a>
+      <div class="rail-rule"></div>
+      <div class="rail-status"><span class="status-dot"></span><span>ENGINE ONLINE</span></div>
+      <div class="rail-copy">PIXEL<br>INTELLIGENCE<br>WORKSPACE</div>
+      <div class="rail-bottom"><span class="mono">v1.0.0</span><span class="vertical-label">DECODELABS / PROJECT 04</span></div>
+    </aside>
+
+    <main class="main-content">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">IMAGE RECOGNITION / OCR</p>
+          <h1>Turn pixels into <em>evidence.</em></h1>
+        </div>
+        <div class="topbar-meta">
+          <span class="live-pill"><span class="pulse"></span> LIVE PIPELINE</span>
+          <span class="mono">THRESHOLD <b>80%</b></span>
+        </div>
+      </header>
+
+      <section class="workspace" aria-label="OCR analysis workspace">
+        <div class="intake-panel panel">
+          <div class="panel-heading">
+            <div><span class="step-index">01</span><span class="eyebrow">SOURCE IMAGE</span></div>
+            <span class="format-note mono">PNG / JPG / WEBP / TIFF</span>
+          </div>
+          <div id="drop-zone" class="drop-zone" tabindex="0" role="button" aria-label="Upload an image">
+            <div class="drop-icon"><span></span><span></span><span></span></div>
+            <h2>Drop an image here</h2>
+            <p>or <button id="browse-button" class="text-button" type="button">browse your files</button></p>
+            <small>Maximum file size 10 MB</small>
+            <input id="file-input" type="file" accept="image/png,image/jpeg,image/webp,image/bmp,image/tiff" hidden>
+          </div>
+          <div id="file-card" class="file-card is-hidden">
+            <div class="file-thumb"><img id="source-preview" alt="Uploaded source preview"></div>
+            <div class="file-info"><strong id="file-name">—</strong><span id="file-meta" class="mono">—</span></div>
+            <button id="remove-file" class="icon-button" type="button" aria-label="Remove image">×</button>
+          </div>
+          <div class="intake-footer">
+            <div class="helper"><span class="helper-mark">i</span><span>Every accepted token clears the 80% confidence gate.</span></div>
+            <button id="run-button" class="primary-button" type="button" disabled><span>Run recognition</span><span class="arrow">↗</span></button>
+          </div>
+          <div id="processing-state" class="processing-state is-hidden"><span class="scan-loader"></span><span id="processing-label">Preprocessing image and running OCR…</span></div>
+          <div id="error-message" class="error-message is-hidden" role="alert"></div>
+        </div>
+
+        <div class="evidence-panel panel">
+          <div class="panel-heading">
+            <div><span class="step-index">02</span><span class="eyebrow">ANNOTATED EVIDENCE</span></div>
+            <span id="result-status" class="status-label mono">AWAITING IMAGE</span>
+          </div>
+          <div id="evidence-empty" class="evidence-empty">
+            <div class="crosshair"><span></span><i></i></div>
+            <h2>Evidence will appear here</h2>
+            <p>Upload a source image to inspect recognized text, confidence, and localization.</p>
+          </div>
+          <div id="evidence-result" class="evidence-result is-hidden">
+            <div class="image-stage"><img id="annotated-image" alt="Annotated OCR output"></div>
+            <div class="image-caption"><span class="mono">GREEN BOX = ACCEPTED DETECTION</span><span id="image-size" class="mono">—</span></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="results-section" class="results-section is-hidden" aria-live="polite">
+        <div class="results-heading"><div><span class="step-index">03</span><span class="eyebrow">RECOGNITION REPORT</span><h2>Detection telemetry</h2></div><div class="report-actions"><button id="download-json" class="secondary-button" type="button">Export JSON <span>↓</span></button><button id="download-text" class="secondary-button" type="button">Copy text <span>↗</span></button></div></div>
+        <div class="metrics-row">
+          <article class="metric-card accent"><span class="metric-label">ACCEPTED</span><strong id="accepted-count">—</strong><span class="metric-foot">above 80% gate</span></article>
+          <article class="metric-card"><span class="metric-label">REVIEW QUEUE</span><strong id="review-count">—</strong><span class="metric-foot">below threshold</span></article>
+          <article class="metric-card"><span class="metric-label">AVG. CONFIDENCE</span><strong id="average-confidence">—</strong><span class="metric-foot">all detections</span></article>
+          <article class="metric-card"><span class="metric-label">PROCESSING</span><strong id="processing-ms">—</strong><span class="metric-foot">end-to-end latency</span></article>
+        </div>
+        <div class="report-grid">
+          <div class="recognized-card panel"><div class="card-title"><span>RECOGNIZED TEXT</span><span class="mono" id="engine-label">TESSERACT OCR</span></div><p id="recognized-text" class="recognized-text">—</p></div>
+          <div class="table-card panel"><div class="card-title"><span>DETECTIONS / <b id="total-count">0</b></span><span class="mono">LABEL / CONFIDENCE / BOX</span></div><div class="table-wrap"><table><thead><tr><th>Token</th><th>Confidence</th><th>Coordinates</th><th>Gate</th></tr></thead><tbody id="detection-body"></tbody></table></div></div>
+        </div>
+      </section>
+
+      <footer class="footer"><span>OCR VISION STUDIO / PROJECT 04</span><span class="mono">OPENCV + TESSERACT / LOCAL-FIRST INFERENCE</span></footer>
+    </main>
+  </div>
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+# OCR Vision Studio — delivery checklist
+
+- [x] **Responsive upload workflow:** The app accepts image uploads through click-to-browse and drag-and-drop, validates image type and size, shows a preview, exposes a clear processing state, and provides reset/retry controls. Verified in the live dashboard shell.
+- [x] **Preprocessing pipeline:** The server converts the source image to grayscale, reduces noise, and applies adaptive thresholding before OCR inference. Verified by `ocr_engine.py` and the sample request.
+- [x] **Working OCR model integration:** The backend uses `pytesseract` with the Tesseract OCR engine and returns word-level text, coordinates, and raw confidence values. Verified by the live API response.
+- [x] **80% confidence gate:** The results view clearly separates accepted detections from lower-confidence review detections, with 80% as the default threshold. The sample returned 16 accepted detections at 95.5% average confidence.
+- [x] **Bounding boxes and labels:** Accepted detections are overlaid on the source image with text labels and confidence scores. Verified by the returned PNG data URL and annotation renderer.
+- [x] **Results dashboard:** The UI displays recognized text, average confidence, accepted/review counts, processing summary, and a detection table. Verified by the rendered page and API-backed markup.
+- [x] **Machine-readable export:** The UI provides JSON and recognized-text downloads containing labels, coordinates, confidence values, and metadata. Implemented in `static/app.js`.
+- [x] **Repository completeness:** The repository contains organized Python source, frontend files, requirements, example assets, README documentation, Docker deployment files, and route metadata.
+- [x] **Deployment readiness:** `/api/health` returns an unauthenticated success response, the container honors `PORT`, and the README documents local and Docker execution.
