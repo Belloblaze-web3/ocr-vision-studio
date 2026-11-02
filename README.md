@@ -1,5 +1,7 @@
 # OCR Vision Studio
 
+[![CI](https://github.com/Belloblaze-web3/ocr-vision-studio/actions/workflows/ci.yml/badge.svg)](https://github.com/Belloblaze-web3/ocr-vision-studio/actions/workflows/ci.yml) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 OCR Vision Studio is a polished Project 4 AI vision platform with two selectable inference paths: **Option 1 — Optical Character Recognition** and **Option 2 — Object Detection**. It turns an uploaded image into inspectable evidence: model output, bounding boxes, confidence values, an annotated image, and exportable JSON.
 
 ## Modes
