@@ -2,14 +2,19 @@ from pathlib import Path
 
 from PIL import Image
 
-from ocr_engine import analyze_image  # type: ignore[import-not-found]
+from ocr_engine import analyze_image, analyze_objects  # type: ignore[import-not-found]
 
 
 if __name__ == "__main__":
     sample = Path(__file__).parent / "public" / "sample" / "sample_text.png"
-    result = analyze_image(Image.open(sample).convert("RGB"))
-    assert result["threshold"] == 80.0
-    assert result["accepted_count"] > 0
-    assert all(item["confidence"] >= 80.0 for item in result["accepted"])
-    assert result["annotated_png"].startswith(b"\x89PNG")
-    print(f"OCR regression check passed: {result['accepted_count']} accepted detections")
+    image = Image.open(sample).convert("RGB")
+    ocr_result = analyze_image(image)
+    assert ocr_result["threshold"] == 80.0
+    assert ocr_result["accepted_count"] > 0
+    assert all(item["confidence"] >= 80.0 for item in ocr_result["accepted"])
+    assert ocr_result["annotated_png"].startswith(b"\x89PNG")
+    object_result = analyze_objects(image)
+    assert object_result["mode"] == "objects"
+    assert object_result["threshold"] == 50.0
+    assert object_result["annotated_png"].startswith(b"\x89PNG")
+    print(f"Vision regression check passed: {ocr_result['accepted_count']} OCR tokens; {object_result['total_count']} objects")
