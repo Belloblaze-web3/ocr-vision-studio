@@ -51,6 +51,12 @@ docker run --rm -p 3000:3000 -e PORT=3000 ocr-vision-studio
 
 The unauthenticated health endpoint is `GET /api/health` and returns the service plus both available model names. The container uses Gunicorn, installs the Tesseract runtime during image build, and honors `PORT`.
 
+## Render deployment
+
+The repository includes `render.yaml` for a Docker-based Render Web Service. In Render, choose **New → Blueprint**, connect `Belloblaze-web3/ocr-vision-studio`, and apply the blueprint. It provisions the `ocr-vision-studio` service, uses `/api/health` for readiness checks, and enables automatic deploys from `main`. The free plan may suspend the service when idle; the first request can take longer while the container starts and downloads model assets.
+
+For a custom parlour checkpoint, add `CUSTOM_MODEL_PATH` as a Render environment variable pointing to a durable packaged path or adapt the Docker image to include the trained weights. Do not commit private training images or secrets.
+
 ## API contract
 
 `POST /api/analyze` accepts a multipart form field named `image` and an optional `mode` field with value `ocr` or `objects` (default `ocr`). Both modes return `mode`, `threshold`, `accepted_count`, `review_count`, `total_count`, `average_confidence`, `processing_ms`, `image_size`, `engine`, `preprocessing`, and `annotated_image`. OCR results include `accepted`, `review`, and `recognized_text`; object results include `detections`, where each item has `label`, `confidence`, and `box` coordinates. `GET /api/health` provides a lightweight readiness check.
