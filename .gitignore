@@ -7,3 +7,6 @@ __pycache__/
 node_modules/
 models/*.caffemodel
 models/*.part
+yolo*.pt
+runs/
+datasets/parlour.yaml

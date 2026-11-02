@@ -39,7 +39,7 @@ def routes_manifest():
 
 @app.get("/api/health")
 def health():
-    return jsonify({"status": "ok", "service": "ocr-vision-studio", "models": ["Tesseract OCR", "MobileNet-SSD"]})
+    return jsonify({"status": "ok", "service": "ocr-vision-studio", "models": ["Tesseract OCR", "YOLOv8n COCO", "MobileNet-SSD", "custom YOLO checkpoint (optional)"]})
 
 
 @app.post("/api/analyze")

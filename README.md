@@ -6,9 +6,20 @@ OCR Vision Studio is a polished Project 4 AI vision platform with two selectable
 
 **OCR mode** uses Python, OpenCV, and Tesseract OCR. The server converts the source to grayscale, reduces noise with a Gaussian blur, applies adaptive thresholding, and runs word-level Tesseract inference. Accepted text tokens clear the fixed 80% confidence gate; lower-confidence tokens remain in the review queue.
 
-**Object Detection mode** uses MobileNet-SSD through OpenCV DNN. The model detects the 20 VOC classes supported by the pretrained network, including person, bicycle, car, bus, dog, cat, bottle, and other common objects. Detections now clear a stricter 70% confidence gate and pass non-maximum suppression before they are returned with object labels, confidence scores, coordinates, and blue annotated bounding boxes. The Caffe model files download automatically into `models/` on the first object-detection request and are cached for subsequent runs.
+**Object Detection mode** now uses YOLOv8n pretrained on COCO as the primary detector and retains MobileNet-SSD through OpenCV DNN as a comparison model. YOLO covers a broader set of household categories, including `tv`, `remote`, `laptop`, `chair`, `couch`, `table`, and `person`. Primary detections clear a 70% confidence gate and are returned with object labels, confidence scores, coordinates, and blue annotated bounding boxes. The MobileNet-SSD Caffe files download automatically into `models/` on first use and are returned as secondary comparison detections.
 
-Important limitation: this pretrained VOC model does not have classes for DVD players, receivers, speakers, electrical sockets, or woofers. It can map an unfamiliar electronic object to the nearest learned class, such as `chair`; the stricter gate reduces these false positives but cannot create classes the model was never trained on. A custom electronics/room model is required for those categories.
+Important limitation: even COCO does not have dedicated classes for DVD players, receivers, speakers, electrical sockets, or woofers. It can still map an unfamiliar electronic object to a nearby learned class. The included custom-training workflow is the correct route for those parlour-specific categories.
+
+## Custom parlour training
+
+The repository includes `train_custom.py`, `datasets/parlour.yaml.example`, and annotation guidance. Copy the YAML example, add YOLO-format labeled images for `tv`, `dvd_player`, `receiver`, `speaker`, `socket`, `woofer`, `chair`, `sofa`, `table`, and `person`, then train:
+
+```bash
+cp datasets/parlour.yaml.example datasets/parlour.yaml
+python train_custom.py --data datasets/parlour.yaml --epochs 100
+```
+
+Point the running app at the resulting checkpoint with `CUSTOM_MODEL_PATH=runs/parlour-vision/weights/best.pt`. At least 50–100 varied labeled images per class is a practical starting point; small objects such as sockets need especially careful boxes and varied lighting.
 
 ## Local setup
 

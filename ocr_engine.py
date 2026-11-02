@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import io
+import os
 import urllib.request
 from pathlib import Path
 from typing import Any
@@ -19,6 +20,10 @@ PROTO_URL = "https://raw.githubusercontent.com/chuanqi305/MobileNet-SSD/master/d
 MODEL_URL = "https://github.com/chuanqi305/MobileNet-SSD/raw/master/mobilenet_iter_73000.caffemodel"
 PROTO_PATH = MODEL_DIR / "deploy.prototxt"
 MODEL_PATH = MODEL_DIR / "mobilenet_iter_73000.caffemodel"
+YOLO_MODEL_NAME = os.environ.get("YOLO_MODEL", str(MODEL_DIR / "yolov8n.pt"))
+CUSTOM_MODEL_PATH = os.environ.get("CUSTOM_MODEL_PATH", "")
+_MOBILE_NET: Any | None = None
+_YOLO_MODEL: Any | None = None
 
 OBJECT_CLASSES = [
     "background", "aeroplane", "bicycle", "bird", "boat", "bottle", "bus",
@@ -74,13 +79,17 @@ def _extract_words(processed: np.ndarray, threshold: float) -> tuple[list[dict[s
 
 def _ensure_object_model() -> Any:  # type: ignore[name-defined]
     """Download the small MobileNet-SSD Caffe files on first object-detection use."""
+    global _MOBILE_NET
+    if _MOBILE_NET is not None:
+        return _MOBILE_NET
     MODEL_DIR.mkdir(parents=True, exist_ok=True)
     for path, url in ((PROTO_PATH, PROTO_URL), (MODEL_PATH, MODEL_URL)):
         if not path.exists() or path.stat().st_size < 1024:
             temporary = path.with_suffix(path.suffix + ".part")
             urllib.request.urlretrieve(url, temporary)
             temporary.replace(path)
-    return cv2.dnn.readNetFromCaffe(str(PROTO_PATH), str(MODEL_PATH))  # type: ignore[attr-defined]
+    _MOBILE_NET = cv2.dnn.readNetFromCaffe(str(PROTO_PATH), str(MODEL_PATH))  # type: ignore[attr-defined]
+    return _MOBILE_NET
 
 
 def _object_detections(source: np.ndarray, threshold: float) -> list[dict[str, Any]]:
@@ -112,6 +121,33 @@ def _object_detections(source: np.ndarray, threshold: float) -> list[dict[str, A
     keep = cv2.dnn.NMSBoxes(boxes, scores, threshold, 0.35) if boxes else []
     indices = np.array(keep).reshape(-1).tolist() if len(keep) else []
     detections = [candidates[index] for index in indices]
+    return sorted(detections, key=lambda item: item["confidence"], reverse=True)
+
+
+def _yolo_detections(source: np.ndarray, threshold: float) -> list[dict[str, Any]]:
+    """Run a stronger COCO detector, or a user-trained model when configured."""
+    global _YOLO_MODEL
+    from ultralytics import YOLO  # type: ignore[import-not-found]
+
+    model_ref = CUSTOM_MODEL_PATH or YOLO_MODEL_NAME
+    if _YOLO_MODEL is None:
+        _YOLO_MODEL = YOLO(model_ref)
+    results = _YOLO_MODEL.predict(source, conf=threshold, verbose=False)  # type: ignore[union-attr]
+    detections: list[dict[str, Any]] = []
+    for result in results:
+        names = result.names
+        boxes = result.boxes
+        if boxes is None:
+            continue
+        for box in boxes:
+            class_index = int(box.cls[0].item())
+            confidence = float(box.conf[0].item())
+            x1, y1, x2, y2 = [int(value) for value in box.xyxy[0].tolist()]
+            label = names[class_index] if isinstance(names, dict) else names[class_index]
+            detections.append({
+                "label": str(label), "confidence": round(confidence * 100, 2),
+                "box": {"left": x1, "top": y1, "width": max(0, x2 - x1), "height": max(0, y2 - y1)},
+            })
     return sorted(detections, key=lambda item: item["confidence"], reverse=True)
 
 
@@ -155,15 +191,20 @@ def analyze_image(image: Image.Image, threshold: float = THRESHOLD) -> dict[str,
 
 def analyze_objects(image: Image.Image, threshold: float = OBJECT_THRESHOLD) -> dict[str, Any]:
     source = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
-    detections = _object_detections(source, threshold)
+    yolo_threshold = max(0.25, threshold)
+    yolo_detections = _yolo_detections(source, yolo_threshold)
+    mobile_detections = _object_detections(source, threshold)
+    detections = yolo_detections
     annotated = _annotate(source, detections, "objects")
     average = sum(item["confidence"] for item in detections) / len(detections) if detections else 0
     return {
-        "mode": "objects", "threshold": round(threshold * 100, 1), "detections": detections,
+        "mode": "objects", "threshold": round(yolo_threshold * 100, 1), "detections": detections,
+        "secondary_detections": mobile_detections,
         "accepted_count": len(detections), "review_count": 0, "total_count": len(detections),
         "recognized_text": ", ".join(item["label"] for item in detections), "average_confidence": round(average, 1),
         "image_size": {"width": image.width, "height": image.height}, "annotated_png": annotated,
-        "engine": "MobileNet-SSD via OpenCV DNN", "preprocessing": ["300×300 blob", "mean subtraction", "confidence filter", "non-maximum suppression"],
+        "engine": "YOLOv8n COCO + MobileNet-SSD comparison", "model_sources": ["custom YOLO checkpoint" if CUSTOM_MODEL_PATH else "YOLOv8n COCO", "MobileNet-SSD VOC"],
+        "preprocessing": ["YOLO letterbox inference", "MobileNet-SSD 300×300 blob", "confidence filter", "non-maximum suppression"],
         "supported_classes": OBJECT_CLASSES[1:],
-        "model_note": "This pretrained VOC model cannot reliably identify DVD players, receivers, speakers, sockets, or woofers because those classes are not in its taxonomy.",
+        "model_note": "Neither the pretrained COCO nor VOC model has dedicated DVD-player, receiver, speaker, socket, or woofer classes; use the included custom-training pipeline for those categories.",
     }

@@ -1,0 +1,16 @@
+# Copy this file to datasets/parlour.yaml and place YOLO-format images/labels under datasets/parlour/.
+path: datasets/parlour
+train: images/train
+val: images/val
+
+names:
+  0: tv
+  1: dvd_player
+  2: receiver
+  3: speaker
+  4: socket
+  5: woofer
+  6: chair
+  7: sofa
+  8: table
+  9: person
