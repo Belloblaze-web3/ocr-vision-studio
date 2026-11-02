@@ -6,7 +6,9 @@ OCR Vision Studio is a polished Project 4 AI vision platform with two selectable
 
 **OCR mode** uses Python, OpenCV, and Tesseract OCR. The server converts the source to grayscale, reduces noise with a Gaussian blur, applies adaptive thresholding, and runs word-level Tesseract inference. Accepted text tokens clear the fixed 80% confidence gate; lower-confidence tokens remain in the review queue.
 
-**Object Detection mode** uses MobileNet-SSD through OpenCV DNN. The model detects the 20 VOC classes supported by the pretrained network, including person, bicycle, car, bus, dog, cat, bottle, and other common objects. Detections clear a 50% confidence gate and are returned with object labels, confidence scores, coordinates, and blue annotated bounding boxes. The Caffe model files download automatically into `models/` on the first object-detection request and are cached for subsequent runs.
+**Object Detection mode** uses MobileNet-SSD through OpenCV DNN. The model detects the 20 VOC classes supported by the pretrained network, including person, bicycle, car, bus, dog, cat, bottle, and other common objects. Detections now clear a stricter 70% confidence gate and pass non-maximum suppression before they are returned with object labels, confidence scores, coordinates, and blue annotated bounding boxes. The Caffe model files download automatically into `models/` on the first object-detection request and are cached for subsequent runs.
+
+Important limitation: this pretrained VOC model does not have classes for DVD players, receivers, speakers, electrical sockets, or woofers. It can map an unfamiliar electronic object to the nearest learned class, such as `chair`; the stricter gate reduces these false positives but cannot create classes the model was never trained on. A custom electronics/room model is required for those categories.
 
 ## Local setup
 

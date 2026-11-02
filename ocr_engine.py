@@ -12,7 +12,7 @@ from PIL import Image, ImageDraw, ImageFont
 from pytesseract import Output
 
 THRESHOLD = 80.0
-OBJECT_THRESHOLD = 0.50
+OBJECT_THRESHOLD = 0.70
 BASE_DIR = Path(__file__).resolve().parent
 MODEL_DIR = BASE_DIR / "models"
 PROTO_URL = "https://raw.githubusercontent.com/chuanqi305/MobileNet-SSD/master/deploy.prototxt"
@@ -89,7 +89,9 @@ def _object_detections(source: np.ndarray, threshold: float) -> list[dict[str, A
     blob = cv2.dnn.blobFromImage(cv2.resize(source, (300, 300)), 0.007843, (300, 300), 127.5)
     net.setInput(blob)
     output = net.forward()
-    detections: list[dict[str, Any]] = []
+    candidates: list[dict[str, Any]] = []
+    boxes: list[list[int]] = []
+    scores: list[float] = []
     for index in range(output.shape[2]):
         confidence = float(output[0, 0, index, 2])
         class_index = int(output[0, 0, index, 1])
@@ -99,11 +101,17 @@ def _object_detections(source: np.ndarray, threshold: float) -> list[dict[str, A
         x1, y1, x2, y2 = box_values.astype(int)
         x1, y1 = max(0, x1), max(0, y1)
         x2, y2 = min(width - 1, x2), min(height - 1, y2)
-        detections.append({
+        detection = {
             "label": OBJECT_CLASSES[class_index],
             "confidence": round(confidence * 100, 2),
             "box": {"left": int(x1), "top": int(y1), "width": int(max(0, x2 - x1)), "height": int(max(0, y2 - y1))},
-        })
+        }
+        candidates.append(detection)
+        boxes.append([int(x1), int(y1), int(max(0, x2 - x1)), int(max(0, y2 - y1))])
+        scores.append(confidence)
+    keep = cv2.dnn.NMSBoxes(boxes, scores, threshold, 0.35) if boxes else []
+    indices = np.array(keep).reshape(-1).tolist() if len(keep) else []
+    detections = [candidates[index] for index in indices]
     return sorted(detections, key=lambda item: item["confidence"], reverse=True)
 
 
@@ -155,5 +163,7 @@ def analyze_objects(image: Image.Image, threshold: float = OBJECT_THRESHOLD) -> 
         "accepted_count": len(detections), "review_count": 0, "total_count": len(detections),
         "recognized_text": ", ".join(item["label"] for item in detections), "average_confidence": round(average, 1),
         "image_size": {"width": image.width, "height": image.height}, "annotated_png": annotated,
-        "engine": "MobileNet-SSD via OpenCV DNN", "preprocessing": ["300×300 blob", "mean subtraction", "confidence filter"],
+        "engine": "MobileNet-SSD via OpenCV DNN", "preprocessing": ["300×300 blob", "mean subtraction", "confidence filter", "non-maximum suppression"],
+        "supported_classes": OBJECT_CLASSES[1:],
+        "model_note": "This pretrained VOC model cannot reliably identify DVD players, receivers, speakers, sockets, or woofers because those classes are not in its taxonomy.",
     }

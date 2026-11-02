@@ -4,12 +4,12 @@
 
 OCR Vision Studio is a GitHub-ready Python web application for the selected Project 4 path: OCR text recognition. A user uploads an image, the server preprocesses it, runs Tesseract OCR through `pytesseract`, keeps detections at or above an 80% confidence threshold, and returns recognized text, bounding boxes, confidence scores, an annotated image, and machine-readable JSON.
 
-The platform now also includes Option 2 — object detection. A mode selector routes the same upload to MobileNet-SSD through OpenCV DNN, using the VOC class set and a 50% detection threshold. Object labels, confidence scores, bounding boxes, and blue annotated overlays are returned through the same dashboard and export flow.
+The platform now also includes Option 2 — object detection. A mode selector routes the same upload to MobileNet-SSD through OpenCV DNN, using the VOC class set, a stricter 70% detection threshold, and non-maximum suppression. Object labels, confidence scores, bounding boxes, and blue annotated overlays are returned through the same dashboard and export flow.
 
 ## Implementation
 
 - **Backend:** Flask serves the responsive UI, `/api/analyze` for multipart image processing, and `/api/health` for deployment checks.
-- **Vision pipeline:** OpenCV converts the upload to grayscale, applies a small Gaussian blur, and uses adaptive thresholding. Tesseract `image_to_data` returns word-level text, coordinates, and confidence values. The alternate MobileNet-SSD path loads the Caffe model, runs a 300×300 DNN blob, filters detections at 50%, and draws labeled boxes onto the original image.
+- **Vision pipeline:** OpenCV converts the upload to grayscale, applies a small Gaussian blur, and uses adaptive thresholding. Tesseract `image_to_data` returns word-level text, coordinates, and confidence values. The alternate MobileNet-SSD path loads the Caffe model, runs a 300×300 DNN blob, filters detections at 70%, applies non-maximum suppression, and draws labeled boxes onto the original image.
 - **Frontend:** A dependency-free HTML/CSS/JavaScript interface provides mode selection, drag-and-drop upload, validation, processing states, preview, result metrics, confidence values, detection table, JSON/text downloads, and a reset flow.
 - **Deployment:** `Dockerfile` installs the Tesseract runtime and Python packages. `requirements.txt`, `.env.example`, and README instructions cover local and container usage.
 - **Project structure:** `app.py` owns HTTP and mode routing; `ocr_engine.py` contains the testable OCR and object-detection pipelines; `models/` documents cached MobileNet-SSD assets; `templates/index.html` is the app shell; `static/styles.css`, `static/mode.css` contain the visual system; `static/app.js` contains browser state and rendering; `public/manus-routes.json` declares page routes.

@@ -4,4 +4,4 @@ The Option 2 object-detection path uses the original MobileNet-SSD Caffe model a
 
 Source model: https://github.com/chuanqi305/MobileNet-SSD
 
-The model is loaded through `cv2.dnn.readNetFromCaffe`, resized to a 300×300 blob, and filtered at 50% confidence before boxes are rendered.
+The model is loaded through `cv2.dnn.readNetFromCaffe`, resized to a 300×300 blob, filtered at 70% confidence, and passed through non-maximum suppression before boxes are rendered. The VOC taxonomy does not include DVD players, receivers, speakers, sockets, or woofers.
