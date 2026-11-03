@@ -88,7 +88,13 @@ def _ensure_object_model() -> Any:  # type: ignore[name-defined]
             temporary = path.with_suffix(path.suffix + ".part")
             urllib.request.urlretrieve(url, temporary)
             temporary.replace(path)
-    _MOBILE_NET = cv2.dnn.readNetFromCaffe(str(PROTO_PATH), str(MODEL_PATH))  # type: ignore[attr-defined]
+    read_caffe = getattr(cv2.dnn, "readNetFromCaffe", None)
+    if read_caffe is not None:
+        _MOBILE_NET = read_caffe(str(PROTO_PATH), str(MODEL_PATH))
+    else:
+        # Some headless OpenCV wheels omit the convenience Caffe reader while
+        # retaining the generic loader used by the same MobileNet-SSD files.
+        _MOBILE_NET = cv2.dnn.readNet(str(MODEL_PATH), str(PROTO_PATH))
     return _MOBILE_NET
 
 
