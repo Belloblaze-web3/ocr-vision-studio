@@ -22,7 +22,7 @@ PROTO_PATH = MODEL_DIR / "deploy.prototxt"
 MODEL_PATH = MODEL_DIR / "mobilenet_iter_73000.caffemodel"
 YOLO_MODEL_NAME = os.environ.get("YOLO_MODEL", "yolov8n.pt")
 CUSTOM_MODEL_PATH = os.environ.get("CUSTOM_MODEL_PATH", "")
-_MOBILE_NET: Any | None = None
+_MOBILE_NET: Any | bool | None = None
 _YOLO_MODEL: Any | None = None
 
 OBJECT_CLASSES = [
@@ -80,6 +80,8 @@ def _extract_words(processed: np.ndarray, threshold: float) -> tuple[list[dict[s
 def _ensure_object_model() -> Any:  # type: ignore[name-defined]
     """Download the small MobileNet-SSD Caffe files on first object-detection use."""
     global _MOBILE_NET
+    if _MOBILE_NET is False:
+        return None
     if _MOBILE_NET is not None:
         return _MOBILE_NET
     MODEL_DIR.mkdir(parents=True, exist_ok=True)
@@ -88,18 +90,24 @@ def _ensure_object_model() -> Any:  # type: ignore[name-defined]
             temporary = path.with_suffix(path.suffix + ".part")
             urllib.request.urlretrieve(url, temporary)
             temporary.replace(path)
-    read_caffe = getattr(cv2.dnn, "readNetFromCaffe", None)
-    if read_caffe is not None:
-        _MOBILE_NET = read_caffe(str(PROTO_PATH), str(MODEL_PATH))
-    else:
-        # Some headless OpenCV wheels omit the convenience Caffe reader while
-        # retaining the generic loader used by the same MobileNet-SSD files.
-        _MOBILE_NET = cv2.dnn.readNet(str(MODEL_PATH), str(PROTO_PATH))
+    try:
+        read_caffe = getattr(cv2.dnn, "readNetFromCaffe", None)
+        if read_caffe is not None:
+            _MOBILE_NET = read_caffe(str(PROTO_PATH), str(MODEL_PATH))
+        else:
+            # OpenCV 5 removed Caffe support. Keep the comparison model
+            # optional so the YOLO primary path remains fully operational.
+            _MOBILE_NET = cv2.dnn.readNet(str(MODEL_PATH), str(PROTO_PATH))
+    except cv2.error:
+        _MOBILE_NET = False
+        return None
     return _MOBILE_NET
 
 
 def _object_detections(source: np.ndarray, threshold: float) -> list[dict[str, Any]]:
     net = _ensure_object_model()
+    if net is None:
+        return []
     height, width = source.shape[:2]
     blob = cv2.dnn.blobFromImage(cv2.resize(source, (300, 300)), 0.007843, (300, 300), 127.5)
     net.setInput(blob)
