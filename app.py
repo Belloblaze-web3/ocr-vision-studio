@@ -17,6 +17,7 @@ MAX_UPLOAD_BYTES = 10 * 1024 * 1024
 
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = MAX_UPLOAD_BYTES
+Image.MAX_IMAGE_PIXELS = 25_000_000
 
 
 def allowed_file(filename: str) -> bool:

@@ -13,6 +13,7 @@ COPY requirements.txt .
 RUN pip install -r requirements.txt
 COPY . .
 
-ENV PORT=3000
+ENV PORT=3000 \
+    WEB_CONCURRENCY=1
 EXPOSE 3000
-CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:${PORT:-3000} --workers 2 --timeout 120 app:app"]
+CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:${PORT:-3000} --workers ${WEB_CONCURRENCY:-1} --timeout 180 app:app"]

@@ -20,7 +20,7 @@ PROTO_URL = "https://raw.githubusercontent.com/chuanqi305/MobileNet-SSD/master/d
 MODEL_URL = "https://github.com/chuanqi305/MobileNet-SSD/raw/master/mobilenet_iter_73000.caffemodel"
 PROTO_PATH = MODEL_DIR / "deploy.prototxt"
 MODEL_PATH = MODEL_DIR / "mobilenet_iter_73000.caffemodel"
-YOLO_MODEL_NAME = os.environ.get("YOLO_MODEL", str(MODEL_DIR / "yolov8n.pt"))
+YOLO_MODEL_NAME = os.environ.get("YOLO_MODEL", "yolov8n.pt")
 CUSTOM_MODEL_PATH = os.environ.get("CUSTOM_MODEL_PATH", "")
 _MOBILE_NET: Any | None = None
 _YOLO_MODEL: Any | None = None
@@ -130,6 +130,12 @@ def _yolo_detections(source: np.ndarray, threshold: float) -> list[dict[str, Any
     from ultralytics import YOLO  # type: ignore[import-not-found]
 
     model_ref = CUSTOM_MODEL_PATH or YOLO_MODEL_NAME
+    # Use the Ultralytics model name when the optional local cache is absent.
+    # A missing project-relative path would fail on a fresh Render instance
+    # instead of allowing Ultralytics to download its standard checkpoint.
+    if not CUSTOM_MODEL_PATH and model_ref == "yolov8n.pt":
+        local_checkpoint = MODEL_DIR / model_ref
+        model_ref = str(local_checkpoint) if local_checkpoint.exists() else "yolov8n.pt"
     if _YOLO_MODEL is None:
         _YOLO_MODEL = YOLO(model_ref)
     results = _YOLO_MODEL.predict(source, conf=threshold, verbose=False)  # type: ignore[union-attr]

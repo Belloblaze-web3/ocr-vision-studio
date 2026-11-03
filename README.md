@@ -40,7 +40,7 @@ pip install -r requirements.txt
 python app.py
 ```
 
-Open `http://localhost:3000`, choose OCR or Object Detection, upload an image, and run the selected analysis. The server reads `PORT` when supplied; the default is `3000`. Object Detection needs internet access the first time it downloads the MobileNet-SSD model assets; see `models/README.md` for the source.
+Open `http://localhost:3000`, choose OCR or Object Detection, upload an image, and run the selected analysis. The server reads `PORT` when supplied; the default is `3000`. Object Detection downloads the standard YOLOv8n and MobileNet-SSD assets on first use when they are not already cached; see `models/README.md` for the comparison-model source.
 
 ## Docker deployment
 
@@ -49,7 +49,7 @@ docker build -t ocr-vision-studio .
 docker run --rm -p 3000:3000 -e PORT=3000 ocr-vision-studio
 ```
 
-The unauthenticated health endpoint is `GET /api/health` and returns the service plus both available model names. The container uses Gunicorn, installs the Tesseract runtime during image build, and honors `PORT`.
+The unauthenticated health endpoint is `GET /api/health` and returns the service plus both available model names. The container uses Gunicorn, installs the Tesseract runtime during image build, honors `PORT`, and defaults to one worker to avoid duplicating the YOLO model in memory on small instances.
 
 ## Render deployment
 
