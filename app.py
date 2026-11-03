@@ -80,5 +80,19 @@ def request_too_large(_error):
     return jsonify({"error": "Images must be 10 MB or smaller."}), 413
 
 
+@app.errorhandler(404)
+def not_found(error):
+    if request.path.startswith("/api/"):
+        return jsonify({"error": "API route not found.", "path": request.path}), 404
+    return error
+
+
+@app.errorhandler(405)
+def method_not_allowed(error):
+    if request.path.startswith("/api/"):
+        return jsonify({"error": "HTTP method not allowed for this API route."}), 405
+    return error
+
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", "3000")), debug=os.environ.get("FLASK_DEBUG") == "1")
